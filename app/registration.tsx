@@ -1,7 +1,9 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Modal } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Modal, Platform } from 'react-native';
 import { Users, ChevronDown } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import * as Application from 'expo-application';
+import { getDeviceId } from '@/lib/auth';
 
 const COMPANIES = ['Batam', 'Tuas', 'Zhoushan'];
 
@@ -9,6 +11,48 @@ export default function RegistrationScreen() {
   const router = useRouter();
   const [selectedCompany, setSelectedCompany] = useState<string>('');
   const [showCompanyPicker, setShowCompanyPicker] = useState(false);
+  const [deviceInfo, setDeviceInfo] = useState({
+    deviceId: 'Loading...',
+    os: 'Loading...',
+    model: 'Loading...',
+  });
+
+  useEffect(() => {
+    loadDeviceInfo();
+  }, []);
+
+  async function loadDeviceInfo() {
+    try {
+      const deviceId = await getDeviceId();
+      const osName = Platform.OS === 'ios' ? 'iOS' : Platform.OS === 'android' ? 'Android' : 'Web';
+      const osVersion = Platform.Version?.toString() || 'Unknown';
+      const deviceModel = await getDeviceModel();
+
+      setDeviceInfo({
+        deviceId,
+        os: `${osName} ${osVersion}`,
+        model: deviceModel,
+      });
+    } catch (error) {
+      console.error('Error loading device info:', error);
+    }
+  }
+
+  async function getDeviceModel(): Promise<string> {
+    try {
+      if (Platform.OS === 'ios') {
+        return Application.deviceName || 'iOS Device';
+      } else if (Platform.OS === 'android') {
+        const brand = Application.applicationName || '';
+        const model = await Application.getDeviceNameAsync() || 'Android Device';
+        return brand ? `${brand} ${model}` : model;
+      } else {
+        return 'Web Browser';
+      }
+    } catch (error) {
+      return 'Unknown Device';
+    }
+  }
 
   const handleRegistration = () => {
     router.replace('/(tabs)');
@@ -30,17 +74,17 @@ export default function RegistrationScreen() {
 
         <View style={styles.infoRow}>
           <Text style={styles.label}>Device ID</Text>
-          <Text style={styles.value}>iOS-9A8B7C6D5E4F</Text>
+          <Text style={styles.value}>{deviceInfo.deviceId}</Text>
         </View>
 
         <View style={styles.infoRow}>
           <Text style={styles.label}>Device OS</Text>
-          <Text style={styles.value}>iOS 17.2</Text>
+          <Text style={styles.value}>{deviceInfo.os}</Text>
         </View>
 
         <View style={styles.infoRow}>
           <Text style={styles.label}>Device Model</Text>
-          <Text style={styles.value}>iPhone 14 Pro</Text>
+          <Text style={styles.value}>{deviceInfo.model}</Text>
         </View>
       </View>
 
