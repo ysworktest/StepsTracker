@@ -1,9 +1,14 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
-import { Users } from 'lucide-react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Modal } from 'react-native';
+import { Users, ChevronDown } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
+
+const COMPANIES = ['Batam', 'Tuas', 'Zhoushan'];
 
 export default function RegistrationScreen() {
   const router = useRouter();
+  const [selectedCompany, setSelectedCompany] = useState<string>('');
+  const [showCompanyPicker, setShowCompanyPicker] = useState(false);
 
   const handleRegistration = () => {
     router.replace('/(tabs)');
@@ -60,15 +65,60 @@ export default function RegistrationScreen() {
 
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Company *</Text>
-          <View style={styles.pickerContainer}>
-            <Text style={styles.pickerText}>Select your company</Text>
-          </View>
+          <TouchableOpacity
+            style={styles.pickerContainer}
+            onPress={() => setShowCompanyPicker(true)}
+          >
+            <Text style={[styles.pickerText, selectedCompany && styles.pickerTextSelected]}>
+              {selectedCompany || 'Select your company'}
+            </Text>
+            <ChevronDown size={20} color="#666" strokeWidth={2} />
+          </TouchableOpacity>
         </View>
       </View>
 
       <TouchableOpacity style={styles.button} onPress={handleRegistration}>
         <Text style={styles.buttonText}>Complete Registration</Text>
       </TouchableOpacity>
+
+      <Modal
+        visible={showCompanyPicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCompanyPicker(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowCompanyPicker(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Company</Text>
+            </View>
+            {COMPANIES.map((company) => (
+              <TouchableOpacity
+                key={company}
+                style={[
+                  styles.companyOption,
+                  selectedCompany === company && styles.companyOptionSelected
+                ]}
+                onPress={() => {
+                  setSelectedCompany(company);
+                  setShowCompanyPicker(false);
+                }}
+              >
+                <Text style={[
+                  styles.companyOptionText,
+                  selectedCompany === company && styles.companyOptionTextSelected
+                ]}>
+                  {company}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </ScrollView>
   );
 }
@@ -159,10 +209,54 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: '#e0e0e0',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   pickerText: {
     fontSize: 15,
     color: '#999',
+  },
+  pickerTextSelected: {
+    color: '#1a1a1a',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    textAlign: 'center',
+  },
+  companyOption: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f5f5f5',
+  },
+  companyOptionSelected: {
+    backgroundColor: '#E8F0FE',
+  },
+  companyOptionText: {
+    fontSize: 16,
+    color: '#1a1a1a',
+  },
+  companyOptionTextSelected: {
+    fontWeight: '600',
+    color: '#4285F4',
   },
   button: {
     backgroundColor: '#4285F4',
