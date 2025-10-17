@@ -2,7 +2,9 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Modal,
 import { Users, ChevronDown } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
+import * as Device from 'expo-device';
 import * as Application from 'expo-application';
+import Constants from 'expo-constants';
 import { getDeviceId } from '@/lib/auth';
 
 const COMPANIES = ['Batam', 'Tuas', 'Zhoushan'];
@@ -23,14 +25,13 @@ export default function RegistrationScreen() {
 
   async function loadDeviceInfo() {
     try {
-      const deviceId = await getDeviceId();
-      const osName = Platform.OS === 'ios' ? 'iOS' : Platform.OS === 'android' ? 'Android' : 'Web';
-      const osVersion = Platform.Version?.toString() || 'Unknown';
-      const deviceModel = await getDeviceModel();
+      const serialNumber = await getDeviceSerialNumber();
+      const osVersion = getDeviceOS();
+      const deviceModel = getDeviceModelName();
 
       setDeviceInfo({
-        deviceId,
-        os: `${osName} ${osVersion}`,
+        deviceId: serialNumber,
+        os: osVersion,
         model: deviceModel,
       });
     } catch (error) {
@@ -38,14 +39,45 @@ export default function RegistrationScreen() {
     }
   }
 
-  async function getDeviceModel(): Promise<string> {
+  async function getDeviceSerialNumber(): Promise<string> {
     try {
       if (Platform.OS === 'ios') {
-        return Application.deviceName || 'iOS Device';
+        const iosId = await Application.getIosIdForVendorAsync();
+        return iosId || 'iOS-Unknown';
       } else if (Platform.OS === 'android') {
-        const brand = Application.applicationName || '';
-        const model = await Application.getDeviceNameAsync() || 'Android Device';
-        return brand ? `${brand} ${model}` : model;
+        const androidId = Application.getAndroidId();
+        return androidId || 'Android-Unknown';
+      } else {
+        const deviceId = await getDeviceId();
+        return deviceId;
+      }
+    } catch (error) {
+      return 'Unknown';
+    }
+  }
+
+  function getDeviceOS(): string {
+    try {
+      if (Platform.OS === 'ios') {
+        return `iOS ${Device.osVersion || Constants.systemVersion || 'Unknown'}`;
+      } else if (Platform.OS === 'android') {
+        return `Android ${Device.osVersion || Platform.Version || 'Unknown'}`;
+      } else {
+        return `Web ${navigator.userAgent.split(' ').pop() || 'Browser'}`;
+      }
+    } catch (error) {
+      return 'Unknown OS';
+    }
+  }
+
+  function getDeviceModelName(): string {
+    try {
+      if (Platform.OS === 'ios') {
+        return Device.modelName || Device.deviceName || 'iOS Device';
+      } else if (Platform.OS === 'android') {
+        const brand = Device.brand || '';
+        const modelName = Device.modelName || Device.deviceName || 'Android Device';
+        return brand ? `${brand} ${modelName}` : modelName;
       } else {
         return 'Web Browser';
       }
